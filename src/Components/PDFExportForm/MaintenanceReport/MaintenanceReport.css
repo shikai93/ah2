@@ -1,0 +1,37 @@
+.formHeader1 {
+    font-weight: 600;
+    text-underline-position: below;
+}
+
+.formContents {
+    margin-top: 20px;
+    text-align: left;
+}
+
+.form-label {
+    vertical-align: middle;
+    margin : auto;
+}
+
+.recordInput {
+    font-size: 1rem;
+}
+
+.verticalCenter {
+    margin-top: auto;
+    margin-bottom: auto;
+}
+@media (max-width: 767px) {                  
+    .extra-pad-on-xs {
+       padding: 10px;
+    }
+    .exta-top-margin-on-small{
+        margin-top: 15px !important;
+    }
+    h1 {
+        font-size : 1.5rem
+    }
+    h2 {
+        font-size: 1.25rem;
+    }
+  }
