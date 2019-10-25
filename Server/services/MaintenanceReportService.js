@@ -90,7 +90,7 @@ class MaintenanceReportService {
     }
     CreateMaintenanceReport(docData,callback) {
         const templateFileName = MAINTENANCEREPORTTEMPLATE
-        var outFileName = "MachineryMaintenanceReport"
+        var outFileName = "MachineryMaintenance/MachineryMaintenanceReport"
         if (docData.month != undefined && docData.year != undefined) {
             outFileName += docData.month 
             outFileName += docData.year 

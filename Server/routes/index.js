@@ -16,16 +16,31 @@ router.get("/", (req, res) => {
   res.send({ response: "I am alive" }).status(200);
 });
 
-router.post("/pdf/create", (req, res) => {
-  // let tagname = req.body.tagname
-  api.CreateForm((value,err) => {
+// LOGIN ROUTES
+router.post("/login", (req, res) => {
+  let username = req.body.username
+  let password = req.body.password
+  if (username == null || password == null ) {
+    res.send({ success: false, error : "Missing Credentials" }).status(500);
+    return
+  }
+  api.Login(username, password, (value, err) => {
     callback(res,value,err)
   })
-});
+})
+router.post("/token/verify", (req, res) => {
+  let userId = req.body.userId
+  let token = req.body.token
+  if (userId == null || token == null ) {
+    res.send({ success: false, error : "Missing Credentials" }).status(500);
+    return
+  }
+  api.VerifyToken(userId, token, (value, err) => {
+    callback(res,value,err)
+  })
+})
 
-// router.get("/pdf/maintenanereport", (req, res) => {
-//   res.send({ response: "I am alive" }).status(200);
-// });
+// MAINTENANCE REPORT ROUTES
 router.post("/pdf/maintenanereport/create", (req, res) => {
   let vessel = req.body.vessel
   let dept = req.body.dept
@@ -43,6 +58,69 @@ router.post("/pdf/maintenanereport/create", (req, res) => {
     callback(res,value,err)
   })
 });
+router.get("/maintenanceReport", (req, res) => {
+  api.GetMaintenanceReport( (value, err) => {
+    callback(res,value,err)
+  })
+});
+
+// WEEKLY DEFECT RECORD ROUTES
+router.post("/pdf/weeklydefect/create", (req, res) => {
+  let vessel = req.body.vessel
+  let dept = req.body.dept
+  let reportedDate = req.body.reportedDate
+  let master = req.body.master
+  let records = req.body.records
+  var docData = {
+    vessel : vessel,
+    dept : dept,
+    reportedDate : new Date(reportedDate),
+    master : master,
+    records : records
+  }
+  api.CreateWeeklyDefect(docData, (value, err) => {
+    callback(res,value,err)
+  })
+});
+router.get("/weeklyDefects", (req, res) => {
+  api.GetWeeklyDefect( (value, err) => {
+    callback(res,value,err)
+  })
+});
+
+// DAILY BUNKER RECORD ROUTES
+router.post("/pdf/dailybunker/create", (req, res) => {
+  let vessel = req.body.vessel
+  let reportDate = req.body.reportDate
+  let lastBunkerDate = req.body.lastBunkerDate
+  let lastBunkerQuantity = req.body.lastBunkerQuantity
+  let chiefEngineerName = req.body.chiefEngineerName
+  let bunkerROB = req.body.bunkerROB
+  let isMGO = ((req.body.isMGO) ? 1 : 0);
+  let isLO = ((req.body.isLO) ? 1 : 0);
+  let isFW = ((req.body.isFW) ? 1 : 0);
+  let records = req.body.records
+  var docData = {
+    vessel : vessel,
+    reportDate : new Date(reportDate),
+    lastBunkerDate: new Date(lastBunkerDate),
+    lastBunkerQuantity : lastBunkerQuantity,
+    chiefEngineerName : chiefEngineerName,
+    bunkerROB : bunkerROB,
+    isMGO : isMGO,
+    isLO : isLO,
+    isFW : isFW,
+    records : records
+  }
+  api.CreateDailyBunkerRecord(docData, (value, err) => {
+    callback(res,value,err)
+  })
+});
+router.get("/dailybunker", (req, res) => {
+  api.GetDailyBunkerRecords( (value, err) => {
+    callback(res,value,err)
+  })
+});
 
 router.get("/departments", (req, res) => {
   api.GetDepartments( (value, err) => {
@@ -54,10 +132,6 @@ router.get("/vessels", (req, res) => {
     callback(res,value,err)
   })
 });
-router.get("/maintenanceReport", (req, res) => {
-  api.GetMaintenanceReport( (value, err) => {
-    callback(res,value,err)
-  })
-});
+
 module.exports = router;
 

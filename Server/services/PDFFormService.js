@@ -28,7 +28,6 @@ class PDFFormService {
         })
         .catch(err => {
             ps.dispose();
-            console.log(err);
             callback(null, err)
         });
     }

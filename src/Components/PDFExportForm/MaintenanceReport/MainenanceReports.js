@@ -11,6 +11,9 @@ class MaintenanceReports extends React.Component {
             reports : []
         }
     }
+    toHome = () => {
+        this.props.history.push("/");
+    }
     addMaintenanceReport = () => {
         this.props.history.push("/maintenance/report/new");
     }
@@ -69,6 +72,7 @@ class MaintenanceReports extends React.Component {
             </Row>
             <Row>
                 <Col xs={12} sm={{span : 10, offset : 1}} style={{textAlign : 'right'}}>
+                    <Button variant="info" onClick={this.toHome} style={{marginRight : '15px'}}>Home</Button>
                     <Button variant="primary" onClick={this.addMaintenanceReport}>Add New Report</Button>
                 </Col>
             </Row>

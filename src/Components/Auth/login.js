@@ -17,7 +17,10 @@ class LoginPage extends React.Component {
         authenticate(this.username.value, this.password.value, authManager,
             (success) => {
                 if (success) {
-                    var path = this.props.location.state.referrer
+                    var path = undefined
+                    if (this.props.location.state !== undefined) {
+                        path = this.props.location.state.referrer
+                    }
                     if (path === undefined) {
                         this.props.history.push('/')
                     } else {

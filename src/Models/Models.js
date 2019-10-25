@@ -8,9 +8,11 @@ class Model {
     get(path, params, callback) {
         axios.get(this.apiEndPoint + path, { params : params}).then(function (res) {
             callback(res.data, null)
+            return
         }).catch(function (error) {
             console.log(error)
             callback(null, error)
+            return
         });
     }
     postReq(path, body, callback){
@@ -18,11 +20,13 @@ class Model {
         .then(function (response) {
             if (response !== null) {
                 callback(response.data, null)
+                return
             }
         })
         .catch(function (error) {
-            console.log(error);
+            console.log(error)
             callback(null, error)
+            return
         });
     }
 }
