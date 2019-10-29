@@ -2,15 +2,17 @@ import React from 'react';
 import { Container, Row, Col, Button, Form} from 'react-bootstrap'
 import PDFExporter from '../../../Helpers/PDFExporter/PDFExporter.js'
 import { withRouter } from "react-router-dom";
+import SpeechRecognition from "react-speech-recognition";
 
 import './WeeklyDefect.css'
 import './../MaintenanceReport/MaintenanceReport.css'
 class WeeklyDefect extends React.Component { 
     exporter = new PDFExporter()
+    recordIdHandling = undefined
+    fieldHandling = undefined
     constructor(props, context) {
         super(props, context)
         var initDate = new Date()
-        initDate.setUTCHours(0,0,0,0)
         this.state={ 
             vessel : "ASIAN HERCULES II",
             dept : "KOMDIGI",
@@ -33,36 +35,50 @@ class WeeklyDefect extends React.Component {
         this.getVessels()
         this.getDepartments()
     }
-    handleVesselChange(event) {
-        let val = event.target.value;
-        let oldState = this.state
-        oldState.vessel = val
-        this.setState(oldState)
+    UNSAFE_componentWillReceiveProps(nextProps) {
+        let id = this.recordIdHandling;
+        let field = this.fieldHandling;
+        if (nextProps.transcript === "" || nextProps.transcript === this.props.transcript) {
+            return
+        }
+        if (id === undefined) {
+            this.handleDataChange(undefined, field, nextProps.transcript)
+        } else {
+            this.handleRecordChange(undefined, field, id, nextProps.transcript)
+        }
     }
-    handleDeptChange(event) {
-        let val = event.target.value;
-        let oldState = this.state
-        oldState.dept = val
-        this.setState(oldState)
-    }
-    handleReportedDateChange(event) {
-        let val = event.target.value;
-        let oldState = this.state
-        oldState.reportedDate = val
-        this.setState(oldState)
-    }
-    handleMasterChange(event) {
-        let val = event.target.value;
-        let oldState = this.state
-        oldState.master = val
-        this.setState(oldState)
-    }
-
-    handleRecordChange(event) {
-        let dataFieldAffected = event.target.dataset.datafield
-        let id = event.target.dataset.id;
+    
+    handleDataChange(event, dataFieldAffected = null, val = null) {
+        if (event !== undefined) {
+            dataFieldAffected = event.target.dataset.datafield
+            val = event.target.value;
+        }
         let oldState = this.state;
-        let val = event.target.value;
+        switch (dataFieldAffected) {    
+            case "vessel" :
+                oldState.vessel = val
+                break
+            case "dept" : 
+                oldState.dept = new Date(val)
+                break
+            case "reportedDate" : 
+                oldState.reportedDate = new Date(val)
+                break
+            case "master" :
+                oldState.master = val
+                break
+            default :
+                break
+        }
+        this.setState(oldState)
+    }
+    handleRecordChange(event, dataFieldAffected = null, id = null, val =  null) {
+        if (event !== undefined) {
+            dataFieldAffected = event.target.dataset.datafield
+            id = event.target.dataset.id;
+            val = event.target.value;
+        }
+        let oldState = this.state;
         switch (dataFieldAffected) {    
             case "description" :
                 oldState.records[id].description = val
@@ -83,6 +99,25 @@ class WeeklyDefect extends React.Component {
                 break
         }
         this.setState(oldState)
+    }
+    handleRecordFocus(event) {
+        this.fieldHandling = event.target.dataset.datafield
+        this.recordIdHandling = event.target.dataset.id
+        this.props.startListening();
+    }
+
+    handleRecordBlur(event) {
+        this.props.stopListening();
+    }
+    decoratorHandleDataChange(event){
+        let field = event.target.dataset.datafield
+        let id = event.target.dataset.id
+        let val = event.target.value
+        if (id === undefined) {
+            this.handleDataChange(undefined, field, val)
+        } else {
+            this.handleRecordChange(undefined, field, id, val)
+        }
     }
 
     addRecord = () => {
@@ -175,7 +210,9 @@ class WeeklyDefect extends React.Component {
                         data-id ={i}
                         data-datafield ="description"
                         className="recordInput"
-                        onChange={this.handleRecordChange.bind(this)} value={record.description}></Form.Control>
+                        onBlur={this.handleRecordBlur.bind(this)}
+                        onFocus={this.handleRecordFocus.bind(this)}
+                        onChange={this.decoratorHandleDataChange.bind(this)} value={record.description}></Form.Control>
                     </Col>
 
                     <Col xs={4} sm={0} className="hide-on-sm extra-pad-on-xs">
@@ -197,7 +234,9 @@ class WeeklyDefect extends React.Component {
                         className="recordInput"
                         data-id ={i}    
                         data-datafield ="prno"
-                        onChange={this.handleRecordChange.bind(this)} value={record.prno}></Form.Control>
+                        onBlur={this.handleRecordBlur.bind(this)}
+                        onFocus={this.handleRecordFocus.bind(this)}
+                        onChange={this.decoratorHandleDataChange.bind(this)} value={record.prno}></Form.Control>
                     </Col>
 
                     <Col xs={4} sm={0} className="hide-on-sm extra-pad-on-xs">
@@ -208,7 +247,9 @@ class WeeklyDefect extends React.Component {
                         className="recordInput"
                         data-id ={i}
                         data-datafield ="wrno"
-                        onChange={this.handleRecordChange.bind(this)} value={record.wrno}></Form.Control>
+                        onBlur={this.handleRecordBlur.bind(this)}
+                        onFocus={this.handleRecordFocus.bind(this)}
+                        onChange={this.decoratorHandleDataChange.bind(this)} value={record.wrno}></Form.Control>
                     </Col>
                     
                     <Col xs={4} sm={0} className="hide-on-sm extra-pad-on-xs">
@@ -219,7 +260,9 @@ class WeeklyDefect extends React.Component {
                             className="recordInput"
                             data-id ={i}
                             data-datafield ="remarks"
-                            onChange={this.handleRecordChange.bind(this)} value={record.remarks} />
+                            onBlur={this.handleRecordBlur.bind(this)}
+                            onFocus={this.handleRecordFocus.bind(this)}
+                            onChange={this.decoratorHandleDataChange.bind(this)} value={record.remarks} />
                     </Col>
                     <Col xs={{span : 1, offset : 11}} sm={{span : 1, offset : 0}} 
                     style={{textAlign : 'center', marginTop : 'auto', marginBottom : 'auto'}}
@@ -252,7 +295,8 @@ class WeeklyDefect extends React.Component {
                             <Col xs={8} md={10}>
                                 <Form.Control as="select"
                                 defaultValue={this.state.vessel}
-                                onChange={this.handleVesselChange.bind(this)} >
+                                data-datafield ="vessel"
+                                onChange={this.handleDataChange.bind(this)} >
                                     {this.renderVessels()}
                                 </Form.Control>
                             </Col>
@@ -267,7 +311,8 @@ class WeeklyDefect extends React.Component {
                             <Col xs={8} md={10}>
                                 <Form.Control as="select"
                                 defaultValue={this.state.dept}
-                                onChange={this.handleDeptChange.bind(this)}>
+                                data-datafield ="dept"
+                                onChange={this.handleDataChange.bind(this)}>
                                     {this.renderDepartments()}
                                 </Form.Control>
                             </Col>
@@ -281,7 +326,8 @@ class WeeklyDefect extends React.Component {
                             </Col>
                             <Col xs={8} md={10}>
                                 <Form.Control type="date" min="1990"
-                                onChange={this.handleReportedDateChange.bind(this)}  
+                                data-datafield ="reportedDate"
+                                onChange={this.handleDataChange.bind(this)}  
                                 defaultValue={this.JSDateToHTMLDateString(this.state.reportedDate)}>
                                 </Form.Control>
                             </Col>
@@ -291,11 +337,14 @@ class WeeklyDefect extends React.Component {
                         <Form.Group controlId="formMaster">
                         <Form.Row>
                             <Col xs={4} md={2}>
-                                <Form.Label>Year : </Form.Label>
+                                <Form.Label>Master : </Form.Label>
                             </Col>
                             <Col xs={8} md={10}>
                                 <Form.Control type="text"
-                                onChange={this.handleMasterChange.bind(this)} value={this.state.master}></Form.Control>
+                                data-datafield ="master"
+                                onBlur={this.handleRecordBlur.bind(this)}
+                                onFocus={this.handleRecordFocus.bind(this)}
+                                onChange={this.decoratorHandleDataChange.bind(this)} value={this.state.master}></Form.Control>
                             </Col>
                         </Form.Row>
                         </Form.Group>
@@ -335,4 +384,8 @@ class WeeklyDefect extends React.Component {
         </Container>
     )}
 }
-export default withRouter(WeeklyDefect);
+const options = {
+    autoStart: false,
+    continuous : false
+}
+export default SpeechRecognition(options)(withRouter(WeeklyDefect));

@@ -2,10 +2,13 @@ import React from 'react';
 import { Container, Row, Col, Button, Form} from 'react-bootstrap'
 import PDFExporter from '../../../Helpers/PDFExporter/PDFExporter.js'
 import { withRouter } from "react-router-dom";
+import SpeechRecognition from "react-speech-recognition";
 
 import '../style.css'
 class DailyBunkerRecord extends React.Component { 
     exporter = new PDFExporter()
+    recordIdHandling = undefined
+    fieldHandling = undefined
     constructor(props, context) {
         super(props, context)
         var initDate = new Date()
@@ -27,10 +30,24 @@ class DailyBunkerRecord extends React.Component {
     componentDidMount() {
         this.getVessels()
     }
-    handleDataChange(event) {
-        let dataFieldAffected = event.target.dataset.datafield
+    UNSAFE_componentWillReceiveProps(nextProps) {
+        let id = this.recordIdHandling;
+        let field = this.fieldHandling;
+        if (nextProps.transcript === "" || nextProps.transcript === this.props.transcript) {
+            return
+        }
+        if (id === undefined) {
+            this.handleDataChange(undefined, field, nextProps.transcript)
+        } else {
+            this.handleRecordChange(undefined, field, id, nextProps.transcript)
+        }
+    }
+    handleDataChange(event, dataFieldAffected = null, val = null) {
+        if (event !== undefined) {
+            dataFieldAffected = event.target.dataset.datafield
+            val = event.target.value
+        }
         let oldState = this.state;
-        let val = event.target.value;
         switch (dataFieldAffected) {    
             case "vessel" :
                 oldState.vessel = val
@@ -77,11 +94,13 @@ class DailyBunkerRecord extends React.Component {
         this.setState(oldState)
     }
 
-    handleRecordChange(event) {
-        let dataFieldAffected = event.target.dataset.datafield
-        let id = event.target.dataset.id;
+    handleRecordChange(event, dataFieldAffected = null, id = null, val =  null) {
+        if (event !== undefined) {
+            dataFieldAffected = event.target.dataset.datafield
+            id = event.target.dataset.id
+            val = event.target.value
+        }
         let oldState = this.state;
-        let val = event.target.value;
         switch (dataFieldAffected) {    
             case "date" :
                 oldState.records[id].date = new Date(val)
@@ -123,6 +142,27 @@ class DailyBunkerRecord extends React.Component {
         return datestring
     }
 
+    handleRecordFocus(event) {
+        this.fieldHandling = event.target.dataset.datafield
+        this.recordIdHandling = event.target.dataset.id
+        this.props.startListening();
+    }
+
+    handleRecordBlur(event) {
+        this.props.stopListening();
+    }
+
+    decoratorHandleDataChange(event){
+        let field = event.target.dataset.datafield
+        let id = event.target.dataset.id
+        let val = event.target.value
+        if (id === undefined) {
+            this.handleDataChange(undefined, field, val)
+        } else {
+            this.handleRecordChange(undefined, field, id, val)
+        }
+    }
+
     addDailyBunker = () => {
         this.exporter.CreateDailyBunkerPDF(this.state, (success) => {
             if (success) {
@@ -158,6 +198,7 @@ class DailyBunkerRecord extends React.Component {
         var recordElms = []
         for (var i=0; i < this.state.records.length; i++) {
             var record = this.state.records[i]
+            console.log(record.ROB)
             recordElms.push(
                 <Form.Row key={i} style={{marginTop : '20px', marginBottom : '20px', fontSize : '.8rem'}}>
                     <Col xs={4} sm={0} className="hide-on-sm extra-pad-on-xs">
@@ -175,11 +216,14 @@ class DailyBunkerRecord extends React.Component {
                         <Form.Label>Consumed</Form.Label>
                     </Col>
                     <Col xs={8} sm={2} className="verticalCenter">
-                        <Form.Control type="number" min="1990"
-                        className="recordInput"
-                        data-id ={i}
-                        data-datafield ="consumed"
-                        onChange={this.handleRecordChange.bind(this)} value={record.consumed}></Form.Control>
+                        <Form.Control type="number"
+                            className="recordInput"
+                            data-id ={i}
+                            data-datafield ="consumed"
+                            onBlur={this.handleRecordBlur.bind(this)}
+                            onFocus={this.handleRecordFocus.bind(this)}
+                            onChange={this.decoratorHandleDataChange.bind(this)}
+                            value={record.consumed}></Form.Control>
                     </Col>
 
                     <Col xs={4} sm={0} className="hide-on-sm extra-pad-on-xs">
@@ -187,10 +231,14 @@ class DailyBunkerRecord extends React.Component {
                     </Col>
                     <Col xs={8} sm={4} className="verticalCenter">
                         <Form.Control type="text"
-                        className="recordInput"
-                        data-id ={i}    
-                        data-datafield ="ROB"
-                        onChange={this.handleRecordChange.bind(this)} value={record.ROB}></Form.Control>
+                            className="recordInput"
+                            data-id ={i}    
+                            data-datafield ="ROB"
+                            onBlur={this.handleRecordBlur.bind(this)}
+                            onFocus={this.handleRecordFocus.bind(this)}
+                            onChange={this.decoratorHandleDataChange.bind(this)}
+                            value={record.ROB}>
+                        </Form.Control>
                     </Col>
 
                     <Col xs={{span : 1, offset : 11}} sm={{span : 1, offset : 0}} 
@@ -247,9 +295,11 @@ class DailyBunkerRecord extends React.Component {
                             </Col>
                             <Col xs={8} md={10}>
                                 <Form.Control type="text"
-                                defaultValue={this.state.chiefEngineerName}
+                                value={this.state.chiefEngineerName}
                                 data-datafield ="chiefEngineerName"
-                                onChange={this.handleDataChange.bind(this)}>
+                                onBlur={this.handleRecordBlur.bind(this)}
+                                onFocus={this.handleRecordFocus.bind(this)}
+                                onChange={this.decoratorHandleDataChange.bind(this)}>
                                 </Form.Control>
                             </Col>
                         </Form.Row>
@@ -292,8 +342,10 @@ class DailyBunkerRecord extends React.Component {
                             <Col xs={8} md={10}>
                                 <Form.Control type="number"
                                 data-datafield ="lastBunkerQuantity"
-                                onChange={this.handleDataChange.bind(this)} 
-                                defaultValue={this.state.lastBunkerQuantity}></Form.Control>
+                                onBlur={this.handleRecordBlur.bind(this)}
+                                onFocus={this.handleRecordFocus.bind(this)}
+                                onChange={this.decoratorHandleDataChange.bind(this)} 
+                                value={this.state.lastBunkerQuantity}></Form.Control>
                             </Col>
                         </Form.Row>
                         </Form.Group>
@@ -306,8 +358,10 @@ class DailyBunkerRecord extends React.Component {
                             <Col xs={8} md={10}>
                                 <Form.Control type="text"
                                 data-datafield ="bunkerROB"
-                                onChange={this.handleDataChange.bind(this)} 
-                                defaultValue={this.state.bunkerROB}></Form.Control>
+                                onBlur={this.handleRecordBlur.bind(this)}
+                                onFocus={this.handleRecordFocus.bind(this)}
+                                onChange={this.decoratorHandleDataChange.bind(this)} 
+                                value={this.state.bunkerROB}></Form.Control>
                             </Col>
                         </Form.Row>
                         </Form.Group>
@@ -363,4 +417,9 @@ class DailyBunkerRecord extends React.Component {
         </Container>
     )}
 }
-export default withRouter(DailyBunkerRecord);
+
+const options = {
+    autoStart: false,
+    continuous : false
+}
+export default SpeechRecognition (options) (withRouter(DailyBunkerRecord));

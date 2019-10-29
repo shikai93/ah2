@@ -2,10 +2,13 @@ import React from 'react';
 import { Container, Row, Col, Button, Form} from 'react-bootstrap'
 import PDFExporter from '../../../Helpers/PDFExporter/PDFExporter.js'
 import { withRouter } from "react-router-dom";
+import SpeechRecognition from "react-speech-recognition";
 
 import './MaintenanceReport.css'
 class MaintenanceReport extends React.Component { 
     exporter = new PDFExporter()
+    recordIdHandling = undefined
+    fieldHandling = undefined
     constructor(props, context) {
         super(props, context)
         this.state={ 
@@ -28,51 +31,19 @@ class MaintenanceReport extends React.Component {
         this.getVessels()
         this.getDepartments()
     }
-    handleVesselChange(event) {
-        let val = event.target.value;
-        let oldState = this.state
-        oldState.vessel = val
-        this.setState(oldState)
+    UNSAFE_componentWillReceiveProps(nextProps) {
+        let id = this.recordIdHandling;
+        let field = this.fieldHandling;
+        if (nextProps.transcript === "" || nextProps.transcript === this.props.transcript) {
+            return
+        }
+        if (id === undefined) {
+            this.handleDataChange(undefined, field, nextProps.transcript)
+        } else {
+            this.handleRecordChange(undefined, field, id, nextProps.transcript)
+        }
     }
-    handleDeptChange(event) {
-        let val = event.target.value;
-        let oldState = this.state
-        oldState.dept = val
-        this.setState(oldState)
-    }
-    handleMonthChange(event) {
-        let val = event.target.value;
-        let oldState = this.state
-        oldState.month = val
-        this.setState(oldState)
-    }
-    handleYearChange(event) {
-        let val = event.target.value;
-        let oldState = this.state
-        oldState.year = val
-        this.setState(oldState)
-    }
-    handleRecordDateChange(event) {
-        let val = event.target.value;
-        let id = event.target.dataset.id;
-        let oldState = this.state
-        oldState.records[id].date = new Date(val)
-        this.setState(oldState)
-    }
-    handleRecordDescripChange(event) {
-        let val = event.target.value;
-        let id = event.target.dataset.id;
-        let oldState = this.state
-        oldState.records[id].description = val
-        this.setState(oldState)
-    }
-    handleRemarksChange(event) {
-        let val = event.target.value;
-        let id = event.target.dataset.id;
-        let oldState = this.state
-        oldState.records[id].remarks = val
-        this.setState(oldState)
-    }
+
     addRecord = () => {
         let oldState = this.state
         oldState.records.push({
@@ -101,6 +72,75 @@ class MaintenanceReport extends React.Component {
     }
     backToMaintenanceReportDash = () => {
         this.props.history.push('/maintenance/report')
+    }
+
+    handleDataChange(event, field=null, val=null) {
+        let oldState = this.state;
+        if (event !== undefined) {
+            field = event.target.dataset.datafield
+            val = event.target.value
+        }
+        switch (field) {    
+            case "vessel" :
+                oldState.vessel = val
+                break
+            case "dept" :
+                oldState.dept = val
+                break
+            case "month" :
+                oldState.month = val
+                break
+            case "year" :
+                oldState.year = val
+                break
+            default :
+                break
+        }
+        this.setState(oldState)
+    }
+
+    handleRecordChange(event, field=null, id=null, val=null) {
+        if (event !== undefined) {
+            field = event.target.dataset.datafield
+            id = event.target.dataset.id
+            val = event.target.value
+        }
+        let oldState = this.state
+        switch (field) {    
+            case "date" :
+                oldState.records[id].date = new Date(val)
+                break
+            case "description" :
+                oldState.records[id].description = val
+                break
+            case "remarks" :
+                    oldState.records[id].remarks = val
+                break
+            default :
+                break
+        }
+        this.setState(oldState)
+    }
+
+    handleRecordFocus(event) {
+        this.fieldHandling = event.target.dataset.datafield
+        this.recordIdHandling = event.target.dataset.id
+        this.props.startListening();
+    }
+
+    handleRecordBlur(event) {
+        this.props.stopListening();
+    }
+
+    decoratorHandleDataChange(event){
+        let field = event.target.dataset.datafield
+        let id = event.target.dataset.id
+        let val = event.target.value
+        if (id === undefined) {
+            this.handleDataChange(undefined, field, val)
+        } else {
+            this.handleRecordChange(undefined, field, id, val)
+        }
     }
 
     getDepartments = () => {
@@ -154,7 +194,8 @@ class MaintenanceReport extends React.Component {
                         <Form.Control type="date" min="1990"
                         className="recordInput"
                         data-id ={i}
-                        onChange={this.handleRecordDateChange.bind(this)} value={this.JSDateToHTMLDateString(record.date)}></Form.Control>
+                        data-datafield ="date"
+                        onChange={this.handleRecordChange.bind(this)} value={this.JSDateToHTMLDateString(record.date)}></Form.Control>
                     </Col>
                     <Col xs={4} sm={0} className="hide-on-sm">
                         <Form.Label>Description</Form.Label>
@@ -163,8 +204,11 @@ class MaintenanceReport extends React.Component {
                         <Form.Control as="textarea"
                         rows="3"
                         data-id ={i}
+                        onBlur={this.handleRecordBlur.bind(this)}
+                        onFocus={this.handleRecordFocus.bind(this)}
                         className="recordInput"
-                        onChange={this.handleRecordDescripChange.bind(this)} value={record.description}></Form.Control>
+                        data-datafield ="description"
+                        onChange={this.decoratorHandleDataChange.bind(this)} value={record.description}></Form.Control>
                     </Col>
                     <Col xs={4} sm={0} className="hide-on-sm">
                         <Form.Label>Remarks</Form.Label>
@@ -173,7 +217,10 @@ class MaintenanceReport extends React.Component {
                         <Form.Control type="textarea"
                             className="recordInput"
                             data-id ={i}
-                            onChange={this.handleRemarksChange.bind(this)} value={record.remarks} />
+                            data-datafield ="remarks"
+                            onBlur={this.handleRecordBlur.bind(this)}
+                            onFocus={this.handleRecordFocus.bind(this)}
+                            onChange={this.decoratorHandleDataChange.bind(this)} value={record.remarks} />
                     </Col>
                     <Col xs={{span : 1, offset : 11}} sm={{span : 1, offset : 0}} 
                     style={{textAlign : 'center', marginTop : 'auto', marginBottom : 'auto'}}
@@ -206,7 +253,8 @@ class MaintenanceReport extends React.Component {
                             <Col xs={8} md={10}>
                                 <Form.Control as="select"
                                 defaultValue={this.state.vessel}
-                                onChange={this.handleVesselChange.bind(this)} >
+                                data-datafield ="vessel"
+                                onChange={this.handleDataChange.bind(this)} >
                                     {this.renderVessels()}
                                 </Form.Control>
                             </Col>
@@ -221,7 +269,8 @@ class MaintenanceReport extends React.Component {
                             <Col xs={8} md={10}>
                                 <Form.Control as="select"
                                 defaultValue={this.state.dept}
-                                onChange={this.handleDeptChange.bind(this)}>
+                                data-datafield ="dept"
+                                onChange={this.handleDataChange.bind(this)}>
                                     {this.renderDepartments()}
                                 </Form.Control>
                             </Col>
@@ -235,7 +284,8 @@ class MaintenanceReport extends React.Component {
                             </Col>
                             <Col xs={8} md={10}>
                                 <Form.Control as="select" 
-                                onChange={this.handleMonthChange.bind(this)}  
+                                data-datafield ="month"
+                                onChange={this.handleDataChange.bind(this)}  
                                 defaultValue={this.state.month}>
                                     <option value="JANUARY">JANUARY</option>
                                     <option value="FEBRUARY">FEBRUARY</option>
@@ -261,7 +311,8 @@ class MaintenanceReport extends React.Component {
                             </Col>
                             <Col xs={8} md={10}>
                                 <Form.Control type="number" min="1990" ref="year" 
-                                onChange={this.handleYearChange.bind(this)} value={this.state.year}></Form.Control>
+                                data-datafield ="year"
+                                onChange={this.handleDataChange.bind(this)} value={this.state.year}></Form.Control>
                             </Col>
                         </Form.Row>
                         </Form.Group>
@@ -296,4 +347,9 @@ class MaintenanceReport extends React.Component {
         </Container>
     )}
 }
-export default withRouter(MaintenanceReport);
+
+const options = {
+    autoStart: false,
+    continuous : false
+}
+export default SpeechRecognition(options)(withRouter(MaintenanceReport));
