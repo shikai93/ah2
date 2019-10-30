@@ -7,8 +7,6 @@ import SpeechRecognition from "react-speech-recognition";
 import '../style.css'
 class DailyBunkerRecord extends React.Component { 
     exporter = new PDFExporter()
-    recordIdHandling = undefined
-    fieldHandling = undefined
     constructor(props, context) {
         super(props, context)
         var initDate = new Date()
@@ -30,6 +28,9 @@ class DailyBunkerRecord extends React.Component {
     componentDidMount() {
         this.getVessels()
     }
+    // MARK : Enable Speech to Text Entry of Input
+    recordIdHandling = undefined
+    fieldHandling = undefined
     UNSAFE_componentWillReceiveProps(nextProps) {
         let id = this.recordIdHandling;
         let field = this.fieldHandling;
@@ -42,6 +43,25 @@ class DailyBunkerRecord extends React.Component {
             this.handleRecordChange(undefined, field, id, nextProps.transcript)
         }
     }
+    handleRecordFocus(event) {
+        this.fieldHandling = event.target.dataset.datafield
+        this.recordIdHandling = event.target.dataset.id
+        this.props.startListening();
+    }
+    handleRecordBlur(event) {
+        this.props.stopListening();
+    }
+    decoratorHandleDataChange(event){
+        let field = event.target.dataset.datafield
+        let id = event.target.dataset.id
+        let val = event.target.value
+        if (id === undefined) {
+            this.handleDataChange(undefined, field, val)
+        } else {
+            this.handleRecordChange(undefined, field, id, val)
+        }
+    }
+
     handleDataChange(event, dataFieldAffected = null, val = null) {
         if (event !== undefined) {
             dataFieldAffected = event.target.dataset.datafield
@@ -140,27 +160,6 @@ class DailyBunkerRecord extends React.Component {
         }
         var datestring = JSDate.getFullYear()+'-'+ ("0"+(JSDate.getMonth()+1)).slice(-2) +'-'+ ("0" + JSDate.getDate()).slice(-2)
         return datestring
-    }
-
-    handleRecordFocus(event) {
-        this.fieldHandling = event.target.dataset.datafield
-        this.recordIdHandling = event.target.dataset.id
-        this.props.startListening();
-    }
-
-    handleRecordBlur(event) {
-        this.props.stopListening();
-    }
-
-    decoratorHandleDataChange(event){
-        let field = event.target.dataset.datafield
-        let id = event.target.dataset.id
-        let val = event.target.value
-        if (id === undefined) {
-            this.handleDataChange(undefined, field, val)
-        } else {
-            this.handleRecordChange(undefined, field, id, val)
-        }
     }
 
     addDailyBunker = () => {

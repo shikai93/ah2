@@ -7,7 +7,6 @@ class SpeechRecognizer extends React.Component {
     }
 
     handleRecordBlur(event) {
-        console.log(this.props.transcript)
         this.props.stopListening();
     }
     render() {

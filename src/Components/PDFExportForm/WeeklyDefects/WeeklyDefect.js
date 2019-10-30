@@ -8,8 +8,6 @@ import './WeeklyDefect.css'
 import './../MaintenanceReport/MaintenanceReport.css'
 class WeeklyDefect extends React.Component { 
     exporter = new PDFExporter()
-    recordIdHandling = undefined
-    fieldHandling = undefined
     constructor(props, context) {
         super(props, context)
         var initDate = new Date()
@@ -35,6 +33,9 @@ class WeeklyDefect extends React.Component {
         this.getVessels()
         this.getDepartments()
     }
+    // MARK : Enable Speech to Text Entry of Input
+    recordIdHandling = undefined
+    fieldHandling = undefined
     UNSAFE_componentWillReceiveProps(nextProps) {
         let id = this.recordIdHandling;
         let field = this.fieldHandling;
@@ -45,6 +46,24 @@ class WeeklyDefect extends React.Component {
             this.handleDataChange(undefined, field, nextProps.transcript)
         } else {
             this.handleRecordChange(undefined, field, id, nextProps.transcript)
+        }
+    }
+    handleRecordFocus(event) {
+        this.fieldHandling = event.target.dataset.datafield
+        this.recordIdHandling = event.target.dataset.id
+        this.props.startListening();
+    }
+    handleRecordBlur(event) {
+        this.props.stopListening();
+    }
+    decoratorHandleDataChange(event){
+        let field = event.target.dataset.datafield
+        let id = event.target.dataset.id
+        let val = event.target.value
+        if (id === undefined) {
+            this.handleDataChange(undefined, field, val)
+        } else {
+            this.handleRecordChange(undefined, field, id, val)
         }
     }
     
@@ -99,25 +118,6 @@ class WeeklyDefect extends React.Component {
                 break
         }
         this.setState(oldState)
-    }
-    handleRecordFocus(event) {
-        this.fieldHandling = event.target.dataset.datafield
-        this.recordIdHandling = event.target.dataset.id
-        this.props.startListening();
-    }
-
-    handleRecordBlur(event) {
-        this.props.stopListening();
-    }
-    decoratorHandleDataChange(event){
-        let field = event.target.dataset.datafield
-        let id = event.target.dataset.id
-        let val = event.target.value
-        if (id === undefined) {
-            this.handleDataChange(undefined, field, val)
-        } else {
-            this.handleRecordChange(undefined, field, id, val)
-        }
     }
 
     addRecord = () => {
