@@ -1,7 +1,9 @@
 ## AH2
 
 Allow simple form creation of :
-    maintenance record
+    <br />Maintenance record
+    <br />Daily Bunker Record
+    <br />Weekly Defects Record
 
 ### `npm start`
 
