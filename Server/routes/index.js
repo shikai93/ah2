@@ -7,7 +7,7 @@ callback = (res,value,err) => {
   if (err === null) {
     res.send({ success: true, value : value }).status(200);
   } else {
-    console.log(err)
+    console.log(res,value,err)
     res.send({ success: false, error : err }).status(500);
   }
 }
@@ -47,12 +47,14 @@ router.post("/pdf/maintenanereport/create", (req, res) => {
   let month = req.body.month
   let year = req.body.year
   let records = req.body.records
+  let signature = req.body.signature
   var docData = {
     vessel : vessel,
     dept : dept,
     month : month,
     year : year,
-    records : records
+    records : records,
+    signature : signature
   }
   api.CreateMaintenanceReport(docData, (value, err) => {
     callback(res,value,err)
@@ -100,6 +102,7 @@ router.post("/pdf/dailybunker/create", (req, res) => {
   let isLO = ((req.body.isLO) ? 1 : 0);
   let isFW = ((req.body.isFW) ? 1 : 0);
   let records = req.body.records
+  let signature = req.body.signature
   var docData = {
     vessel : vessel,
     reportDate : new Date(reportDate),
@@ -110,7 +113,8 @@ router.post("/pdf/dailybunker/create", (req, res) => {
     isMGO : isMGO,
     isLO : isLO,
     isFW : isFW,
-    records : records
+    records : records,
+    signature : signature
   }
   api.CreateDailyBunkerRecord(docData, (value, err) => {
     callback(res,value,err)
@@ -118,6 +122,21 @@ router.post("/pdf/dailybunker/create", (req, res) => {
 });
 router.get("/dailybunker", (req, res) => {
   api.GetDailyBunkerRecords( (value, err) => {
+    callback(res,value,err)
+  })
+});
+
+// ATTENDANCE ROUTE
+router.post("/attendance/new", (req, res) => {
+  let attendanceDate = req.body.attendanceDate
+  let attendeesCSV = req.body.attendees
+  let meeting = req.body.meeting
+  var docData = {
+    attendanceDate : new Date(attendanceDate),
+    attendees: attendeesCSV,
+    meeting : meeting
+  }
+  api.MarkAttendance(docData, (value, err) => {
     callback(res,value,err)
   })
 });

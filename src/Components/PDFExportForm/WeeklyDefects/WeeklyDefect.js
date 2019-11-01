@@ -26,7 +26,7 @@ class WeeklyDefect extends React.Component {
                 }
             ],
             vesselNames : [],
-            deptNames : []
+            deptNames : [],
         };
     }
     componentDidMount() {

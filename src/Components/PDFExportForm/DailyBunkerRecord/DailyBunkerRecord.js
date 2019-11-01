@@ -1,12 +1,20 @@
 import React from 'react';
 import { Container, Row, Col, Button, Form} from 'react-bootstrap'
-import PDFExporter from '../../../Helpers/PDFExporter/PDFExporter.js'
 import { withRouter } from "react-router-dom";
+
+import PDFExporter from '../../../Helpers/PDFExporter/PDFExporter.js'
+import {RenderForm} from '../../../Helpers/FormRenderer.js'
+import {JSDateToHTMLDateString} from '../../../Helpers/Helper.js'
+import APIService from "../../../Helpers/APIService.js"
+
 import SpeechRecognition from "react-speech-recognition";
+import SignatureCanvas from 'react-signature-canvas'
 
 import '../style.css'
 class DailyBunkerRecord extends React.Component { 
     exporter = new PDFExporter()
+    sigCanvas = undefined
+    api = new APIService()
     constructor(props, context) {
         super(props, context)
         var initDate = new Date()
@@ -22,7 +30,8 @@ class DailyBunkerRecord extends React.Component {
             isFW : false,
             records : [
             ],
-            vesselNames : []
+            vesselNames : [],
+            signature : undefined
         };
     }
     componentDidMount() {
@@ -154,16 +163,13 @@ class DailyBunkerRecord extends React.Component {
         this.setState(oldState) 
     }
 
-    JSDateToHTMLDateString = (JSDate) => {
-        if (JSDate === undefined || !JSDate.getFullYear) {
-            return ""
-        }
-        var datestring = JSDate.getFullYear()+'-'+ ("0"+(JSDate.getMonth()+1)).slice(-2) +'-'+ ("0" + JSDate.getDate()).slice(-2)
-        return datestring
-    }
-
     addDailyBunker = () => {
-        this.exporter.CreateDailyBunkerPDF(this.state, (success) => {
+        if (this.sigCanvas === undefined || this.sigCanvas.isEmpty()) {
+            alert("Please sign off")
+        }
+        var curState = this.state
+        curState.signature = this.sigCanvas.getTrimmedCanvas().toDataURL('image/png')
+        this.exporter.CreateDailyBunkerPDF(curState, (success) => {
             if (success) {
                 this.backToDailyBunkerDash()
             }
@@ -174,30 +180,22 @@ class DailyBunkerRecord extends React.Component {
     }
 
     getVessels = () => {
-        this.exporter.get("/vessels", {} , (vessels, error) => {
-            if (error == null) {
-                let oldState = this.state
-                oldState.vesselNames = vessels.value
-                this.setState(oldState) 
+        this.api.GetVessels((vessels) => {
+            let oldState = this.state
+            if (vessels instanceof Array) {
+                oldState.vesselNames = []
+                vessels.forEach((elm) => {
+                    oldState.vesselNames.push({label : elm.name, value : elm.name})
+                });
             }
+            this.setState(oldState) 
         })
-    }
-    renderVessels = () => {
-        var vesselNames = []
-        for (var i=0; i < this.state.vesselNames.length; i++) {
-            var name = this.state.vesselNames[i].name
-            vesselNames.push(
-                <option key={i} value={name}>{name}</option>
-            )
-        }
-        return vesselNames
-    }
+    }    
 
     renderRecords = () => {
         var recordElms = []
         for (var i=0; i < this.state.records.length; i++) {
             var record = this.state.records[i]
-            console.log(record.ROB)
             recordElms.push(
                 <Form.Row key={i} style={{marginTop : '20px', marginBottom : '20px', fontSize : '.8rem'}}>
                     <Col xs={4} sm={0} className="hide-on-sm extra-pad-on-xs">
@@ -208,7 +206,7 @@ class DailyBunkerRecord extends React.Component {
                         data-id ={i}
                         data-datafield ="date"
                         className="recordInput"
-                        onChange={this.handleRecordChange.bind(this)} value={this.JSDateToHTMLDateString(record.date)}></Form.Control>
+                        onChange={this.handleRecordChange.bind(this)} value={JSDateToHTMLDateString(record.date)}></Form.Control>
                     </Col>
 
                     <Col xs={4} sm={0} className="hide-on-sm extra-pad-on-xs">
@@ -261,6 +259,59 @@ class DailyBunkerRecord extends React.Component {
         } else if (this.state.isFW) {
             bunkerType = 2
         }
+        var formDataTop = {
+            fields : [{
+                label : "Vessel",
+                value : this.state.vessel,
+                type : "select",
+                datafield : "vessel",
+                onChange : this.handleDataChange.bind(this),
+                options : this.state.vesselNames
+            },{
+                label : "Chief Engineer Name",
+                value : this.state.chiefEngineerName,
+                type : "text",
+                datafield : "chiefEngineerName",
+                onChange : this.decoratorHandleDataChange.bind(this),
+                onFocus : this.handleRecordFocus.bind(this),
+                onBlur : this.handleRecordBlur.bind(this),
+            },{
+                label : "Report Date",
+                value : this.state.reportDate,
+                type : "date",
+                datafield : "reportDate",
+                onChange : this.handleDataChange.bind(this),
+            },{
+                label : "Last Bunker Date",
+                value : this.state.lastBunkerDate,
+                type : "date",
+                datafield : "lastBunkerDate",
+                onChange : this.handleDataChange.bind(this),
+            },{
+                label : "Last Bunker Quantity",
+                value : this.state.lastBunkerQuantity,
+                type : "number",
+                datafield : "lastBunkerQuantity",
+                onChange : this.decoratorHandleDataChange.bind(this),
+                onFocus : this.handleRecordFocus.bind(this),
+                onBlur : this.handleRecordBlur.bind(this),
+            },{
+                label : "Bunker ROB",
+                value : this.state.bunkerROB,
+                type : "text",
+                datafield : "bunkerROB",
+                onChange : this.decoratorHandleDataChange.bind(this),
+                onFocus : this.handleRecordFocus.bind(this),
+                onBlur : this.handleRecordBlur.bind(this),
+            },{
+                label : "Bunker Type",
+                value : bunkerType,
+                type : "select",
+                datafield : "bunkerType",
+                onChange : this.handleDataChange.bind(this),
+                options : [{label : "MGO", value : 0},{label : "Lube Oil", value : 1},{label : "Fresh Water", value : 2}]
+            }]
+        }
         return (
         <Container>
             <Row>
@@ -270,119 +321,7 @@ class DailyBunkerRecord extends React.Component {
             </Row>
             <Row className="formContents">
                  <Col xs={12} sm={{span : 10, offset : 1}}>
-                     <Form>
-                        <Form.Group controlId="formVessel" >
-                        <Form.Row>
-                            <Col xs={4} md={2}>
-                                <Form.Label>Vessel : </Form.Label>
-                            </Col>
-                            <Col xs={8} md={10}>
-                                <Form.Control as="select"
-                                defaultValue={this.state.vessel}
-                                data-datafield ="vessel"
-                                onChange={this.handleDataChange.bind(this)} >
-                                    {this.renderVessels()}
-                                </Form.Control>
-                            </Col>
-                        </Form.Row>
-                        </Form.Group>
-                        
-                        <Form.Group controlId="formCEName">
-                        <Form.Row>
-                            <Col xs={4} md={2}>
-                                <Form.Label>Chief Engineer Name : </Form.Label>
-                            </Col>
-                            <Col xs={8} md={10}>
-                                <Form.Control type="text"
-                                value={this.state.chiefEngineerName}
-                                data-datafield ="chiefEngineerName"
-                                onBlur={this.handleRecordBlur.bind(this)}
-                                onFocus={this.handleRecordFocus.bind(this)}
-                                onChange={this.decoratorHandleDataChange.bind(this)}>
-                                </Form.Control>
-                            </Col>
-                        </Form.Row>
-                        </Form.Group>
-
-                        <Form.Group controlId="formReportedDate">
-                        <Form.Row>
-                            <Col xs={4} md={2}>
-                                <Form.Label>Report Date : </Form.Label>
-                            </Col>
-                            <Col xs={8} md={10}>
-                                <Form.Control type="date" min="1990"
-                                data-datafield ="reportDate"
-                                onChange={this.handleDataChange.bind(this)}  
-                                defaultValue={this.JSDateToHTMLDateString(this.state.reportDate)}>
-                                </Form.Control>
-                            </Col>
-                        </Form.Row>
-                        </Form.Group>
-
-                        <Form.Group controlId="formLastBunkerDate">
-                        <Form.Row>
-                            <Col xs={4} md={2}>
-                                <Form.Label>Last Bunker Date : </Form.Label>
-                            </Col>
-                            <Col xs={8} md={10}>
-                                <Form.Control type="date" min="1990"
-                                data-datafield ="lastBunkerDate"
-                                onChange={this.handleDataChange.bind(this)} 
-                                defaultValue={this.JSDateToHTMLDateString(this.state.lastBunkerDate)}></Form.Control>
-                            </Col>
-                        </Form.Row>
-                        </Form.Group>
-
-                        <Form.Group controlId="formLastBunkerQty">
-                        <Form.Row>
-                            <Col xs={4} md={2}>
-                                <Form.Label>Last Bunker Quantity : </Form.Label>
-                            </Col>
-                            <Col xs={8} md={10}>
-                                <Form.Control type="number"
-                                data-datafield ="lastBunkerQuantity"
-                                onBlur={this.handleRecordBlur.bind(this)}
-                                onFocus={this.handleRecordFocus.bind(this)}
-                                onChange={this.decoratorHandleDataChange.bind(this)} 
-                                value={this.state.lastBunkerQuantity}></Form.Control>
-                            </Col>
-                        </Form.Row>
-                        </Form.Group>
-
-                        <Form.Group controlId="formBunkerRob">
-                        <Form.Row>
-                            <Col xs={4} md={2}>
-                                <Form.Label>Bunker ROB : </Form.Label>
-                            </Col>
-                            <Col xs={8} md={10}>
-                                <Form.Control type="text"
-                                data-datafield ="bunkerROB"
-                                onBlur={this.handleRecordBlur.bind(this)}
-                                onFocus={this.handleRecordFocus.bind(this)}
-                                onChange={this.decoratorHandleDataChange.bind(this)} 
-                                value={this.state.bunkerROB}></Form.Control>
-                            </Col>
-                        </Form.Row>
-                        </Form.Group>
-
-                        <Form.Group controlId="formBunkerType">
-                        <Form.Row>
-                            <Col xs={4} md={2}>
-                                <Form.Label>Bunker Type : </Form.Label>
-                            </Col>
-                            <Col xs={8} md={10}>
-                                <Form.Control as="select"
-                                defaultValue={bunkerType}
-                                data-datafield ="bunkerType"
-                                onChange={this.handleDataChange.bind(this)} >
-                                    <option value={0}>MGO</option>
-                                    <option value={1}>Lube Oil</option>
-                                    <option value={2}>Fresh Water</option>
-                                </Form.Control>
-                            </Col>
-                        </Form.Row>
-                        </Form.Group>
-                    </Form>
+                    {RenderForm(formDataTop)}
                  </Col>
             </Row>
             <Row style={{marginLeft:'-15px', marginRight : '-15px'}}>
@@ -401,6 +340,13 @@ class DailyBunkerRecord extends React.Component {
                         </Form.Row>
                         {this.renderRecords()}
                     </Form.Group>
+                </Col>
+            </Row>
+            <Row>
+                <Col xs={12} sm={{span : 11}} style={{textAlign : "right", marginTop : '30px'}}>
+                <SignatureCanvas 
+                    canvasProps={{width: 300, height: 100, className: 'sigCanvas'}} 
+                    ref={(ref) => { this.sigCanvas = ref }} />,
                 </Col>
             </Row>
             <Row>

@@ -21,6 +21,12 @@
     margin-top: auto;
     margin-bottom: auto;
 }
+
+.sigCanvas{
+    border-width: 1px;
+    border-color: gray;
+    border-style: dashed;
+}
 @media (max-width: 767px) {                  
     .extra-pad-on-xs {
        padding: 10px;

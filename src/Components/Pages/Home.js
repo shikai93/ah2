@@ -12,6 +12,9 @@ class Home extends React.Component {
     toDailyBunker = () => {
         this.props.history.push("/dailybunker/report");
     }
+    toAttendance = () => {
+        this.props.history.push("/attendance");
+    }
     render() {
         return (
             <Container>
@@ -23,14 +26,17 @@ class Home extends React.Component {
                 <Row>
                     <Col xs={12} sm={{span : 10, offset : 1}}>
                         <Row>
-                            <Col xs={6} sm={4}>
-                                <Button variant="primary" onClick={this.toMaintenanceReports}>Machinery Maintenance</Button>
+                            <Col xs={6} sm={4} style={{marginTop : "10px"}}>
+                                <Button variant="primary" onClick={this.toMaintenanceReports} style={{width:"100%", height : "100%"}}>Machinery Maintenance</Button>
                             </Col>
-                            <Col xs={6} sm={4}>
-                                <Button variant="primary" onClick={this.toWeeklyDefects}>Weekly Defect</Button>
+                            <Col xs={6} sm={4} style={{marginTop : "10px"}}>
+                                <Button variant="primary" onClick={this.toWeeklyDefects} style={{width:"100%", height : "100%"}}>Weekly Defect</Button>
                             </Col>
-                            <Col xs={6} sm={4}>
-                                <Button variant="primary" onClick={this.toDailyBunker}>Daily Bunker, Lubricants & Fresh Water</Button>
+                            <Col xs={6} sm={4} style={{marginTop : "10px"}}>
+                                <Button variant="primary" onClick={this.toDailyBunker} style={{width:"100%", height : "100%"}}>Daily Bunker, Lubricants & Fresh Water</Button>
+                            </Col>
+                            <Col xs={6} sm={4} style={{marginTop : "10px"}}>
+                                <Button variant="primary" onClick={this.toAttendance} style={{width:"100%", height : "100%"}}>Attendance App</Button>
                             </Col>
                         </Row>
                     </Col>

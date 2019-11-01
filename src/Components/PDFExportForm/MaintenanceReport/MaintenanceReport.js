@@ -3,10 +3,16 @@ import { Container, Row, Col, Button, Form} from 'react-bootstrap'
 import PDFExporter from '../../../Helpers/PDFExporter/PDFExporter.js'
 import { withRouter } from "react-router-dom";
 import SpeechRecognition from "react-speech-recognition";
+import SignatureCanvas from 'react-signature-canvas'
 
 import './MaintenanceReport.css'
+import { RenderForm } from '../../../Helpers/FormRenderer.js';
+import {JSDateToHTMLDateString} from '../../../Helpers/Helper.js'
+import APIService from "../../../Helpers/APIService.js"
 class MaintenanceReport extends React.Component { 
     exporter = new PDFExporter()
+    api = new APIService()
+    sigCanvas = undefined
     constructor(props, context) {
         super(props, context)
         this.state={ 
@@ -22,7 +28,8 @@ class MaintenanceReport extends React.Component {
                 }
             ],
             vesselNames : [],
-            deptNames : []
+            deptNames : [],
+            signature : undefined
         };
     }
     componentDidMount() {
@@ -79,12 +86,14 @@ class MaintenanceReport extends React.Component {
         oldState.records.splice(id,1)
         this.setState(oldState) 
     }
-    JSDateToHTMLDateString = (JSDate) => {
-        var datestring = JSDate.getFullYear()+'-'+ ("0"+(JSDate.getMonth()+1)).slice(-2) +'-'+ ("0" + JSDate.getDate()).slice(-2)
-        return datestring
-    }
+
     addMaintenanceReport = () => {
-        this.exporter.CreateMaintenanceReportPDF(this.state, (success) => {
+        if (this.sigCanvas === undefined || this.sigCanvas.isEmpty()) {
+            alert("Please sign off")
+        }
+        var curState = this.state
+        curState.signature = this.sigCanvas.getTrimmedCanvas().toDataURL('image/png')
+        this.exporter.CreateMaintenanceReportPDF(curState, (success) => {
             if (success) {
                 this.backToMaintenanceReportDash()
             }
@@ -118,7 +127,6 @@ class MaintenanceReport extends React.Component {
         }
         this.setState(oldState)
     }
-
     handleRecordChange(event, field=null, id=null, val=null) {
         if (event !== undefined) {
             field = event.target.dataset.datafield
@@ -143,43 +151,30 @@ class MaintenanceReport extends React.Component {
     }
 
     getDepartments = () => {
-        this.exporter.get("/departments", {} , (depts, error) => {
-            if (error == null) {
-                let oldState = this.state
-                oldState.deptNames = depts.value
-                this.setState(oldState) 
+        this.api.GetDepts((depts) => {
+            let oldState = this.state
+            if (depts instanceof Array) {
+                oldState.deptNames = []
+                depts.forEach((elm) => {
+                    oldState.deptNames.push({label : elm.name, value : elm.name})
+                });
             }
+            this.setState(oldState) 
         })
-    }
-    renderDepartments = () => {
-        var departments = []
-        for (var i=0; i < this.state.deptNames.length; i++) {
-            var name = this.state.deptNames[i].name
-            departments.push(
-                <option key={i} value={name}>{name}</option>
-            )
-        }
-        return departments
     }
     getVessels = () => {
-        this.exporter.get("/vessels", {} , (vessels, error) => {
-            if (error == null) {
-                let oldState = this.state
-                oldState.vesselNames = vessels.value
-                this.setState(oldState) 
+        this.api.GetVessels((vessels) => {
+            let oldState = this.state
+            if (vessels instanceof Array) {
+                oldState.vesselNames = []
+                vessels.forEach((elm) => {
+                    oldState.vesselNames.push({label : elm.name, value : elm.name})
+                });
             }
+            this.setState(oldState) 
         })
-    }
-    renderVessels = () => {
-        var vesselNames = []
-        for (var i=0; i < this.state.vesselNames.length; i++) {
-            var name = this.state.vesselNames[i].name
-            vesselNames.push(
-                <option key={i} value={name}>{name}</option>
-            )
-        }
-        return vesselNames
-    }
+    } 
+   
     renderRecords = () => {
         var recordElms = []
         for (var i=0; i < this.state.records.length; i++) {
@@ -194,7 +189,7 @@ class MaintenanceReport extends React.Component {
                         className="recordInput"
                         data-id ={i}
                         data-datafield ="date"
-                        onChange={this.handleRecordChange.bind(this)} value={this.JSDateToHTMLDateString(record.date)}></Form.Control>
+                        onChange={this.handleRecordChange.bind(this)} value={JSDateToHTMLDateString(record.date)}></Form.Control>
                     </Col>
                     <Col xs={4} sm={0} className="hide-on-sm">
                         <Form.Label>Description</Form.Label>
@@ -234,6 +229,49 @@ class MaintenanceReport extends React.Component {
         return recordElms
     }
     render() { 
+        var formDataTop = {
+            fields : [{
+                label : "Vessel",
+                value : this.state.vessel,
+                type : "select",
+                datafield : "vessel",
+                onChange : this.handleDataChange.bind(this),
+                options : this.state.vesselNames
+            },{
+                label : "Dept",
+                value : this.state.dept,
+                type : "select",
+                datafield : "dept",
+                onChange : this.handleDataChange.bind(this),
+                options : this.state.deptNames
+            },{
+                label : "Month",
+                value : this.state.month,
+                type : "select",
+                datafield : "month",
+                onChange : this.handleDataChange.bind(this),
+                options : [
+                    {label : "JANUARY", value : "JANUARY"},
+                    {label : "FEBRUARY", value : "FEBRUARY"},
+                    {label : "MARCH", value : "MARCH"},
+                    {label : "APRIL", value : "APRIL"},
+                    {label : "MAY", value : "MAY"},
+                    {label : "JUNE", value : "JUNE"},
+                    {label : "JULY", value : "JULY"},
+                    {label : "AUGUST", value : "AUGUST"},
+                    {label : "SEPTEMBER", value : "SEPTEMBER"},
+                    {label : "OCTOBER", value : "OCTOBER"},
+                    {label : "NOVEMBER", value : "NOVEMBER"},
+                    {label : "DECEMBER", value : "DECEMBER"},
+                ]
+            },{
+                label : "Year",
+                value : this.state.year,
+                type : "number",
+                datafield : "year",
+                onChange : this.handleDataChange.bind(this),
+            }]
+        }
         return (
         <Container>
             <Row>
@@ -243,95 +281,29 @@ class MaintenanceReport extends React.Component {
             </Row>
             <Row className="formContents">
                  <Col xs={12} sm={{span : 10, offset : 1}}>
-                     <Form>
-                        <Form.Group controlId="formVessel" >
-                        <Form.Row>
-                            <Col xs={4} md={2}>
-                                <Form.Label>Vessel : </Form.Label>
-                            </Col>
-                            <Col xs={8} md={10}>
-                                <Form.Control as="select"
-                                defaultValue={this.state.vessel}
-                                data-datafield ="vessel"
-                                onChange={this.handleDataChange.bind(this)} >
-                                    {this.renderVessels()}
-                                </Form.Control>
-                            </Col>
-                        </Form.Row>
-                        </Form.Group>
-
-                        <Form.Group controlId="formDept">
-                        <Form.Row>
-                            <Col xs={4} md={2}>
-                                <Form.Label>Dept : </Form.Label>
-                            </Col>
-                            <Col xs={8} md={10}>
-                                <Form.Control as="select"
-                                defaultValue={this.state.dept}
-                                data-datafield ="dept"
-                                onChange={this.handleDataChange.bind(this)}>
-                                    {this.renderDepartments()}
-                                </Form.Control>
-                            </Col>
-                        </Form.Row>
-                        </Form.Group>
-
-                        <Form.Group controlId="formMonth">
-                        <Form.Row>
-                            <Col xs={4} md={2}>
-                                <Form.Label>Month : </Form.Label>
-                            </Col>
-                            <Col xs={8} md={10}>
-                                <Form.Control as="select" 
-                                data-datafield ="month"
-                                onChange={this.handleDataChange.bind(this)}  
-                                defaultValue={this.state.month}>
-                                    <option value="JANUARY">JANUARY</option>
-                                    <option value="FEBRUARY">FEBRUARY</option>
-                                    <option value="MARCH">MARCH</option>
-                                    <option value="APRIL">APRIL</option>
-                                    <option value="MAY">MAY</option>
-                                    <option value="JUNE">JUNE</option>
-                                    <option value="JULY">JULY</option>
-                                    <option value="AUGUST">AUGUST</option>
-                                    <option value="SEPTEMBER">SEPTEMBER</option>
-                                    <option value="OCTOBER">OCTOBER</option>
-                                    <option value="NOVEMBER">NOVEMBER</option>
-                                    <option value="DECEMBER">DECEMBER</option>
-                                </Form.Control>
-                            </Col>
-                        </Form.Row>
-                        </Form.Group>
-
-                        <Form.Group controlId="formYear">
-                        <Form.Row>
-                            <Col xs={4} md={2}>
-                                <Form.Label>Year : </Form.Label>
-                            </Col>
-                            <Col xs={8} md={10}>
-                                <Form.Control type="number" min="1990" ref="year" 
-                                data-datafield ="year"
-                                onChange={this.handleDataChange.bind(this)} value={this.state.year}></Form.Control>
-                            </Col>
-                        </Form.Row>
-                        </Form.Group>
-
-                        <Form.Group controlId="formRecords">
-                        <Form.Row style={{marginTop : '40px', marginBottom : '10px'}}>
-                            <Col style={{textAlign : 'center'}}>
-                                <h2>Records </h2>
-                            </Col>
-                        </Form.Row>
-                        <Form.Row style={{textAlign : "center", fontSize : '1rem', fontWeight : 600}}>
-                            <Col xs={3} className="hide-on-xs">Date</Col>
-                            <Col xs={5} className="hide-on-xs">Description Of Maintenance Job Carried Out</Col>
-                            <Col xs={3} className="hide-on-xs">Remarks <br/>(For Official Use)</Col>
-                            <Col xs={{span : 1, offset : 11}} sm={1}> <Button variant='info' onClick={this.addRecord} style={{padding : '0 .4rem'}}>+</Button></Col>
-                        </Form.Row>
-                        {this.renderRecords()}
-                        </Form.Group>
-                    </Form>
+                     {RenderForm(formDataTop)}
+                    <Form.Group controlId="formRecords">
+                    <Form.Row style={{marginTop : '40px', marginBottom : '10px'}}>
+                        <Col style={{textAlign : 'center'}}>
+                            <h2>Records </h2>
+                        </Col>
+                    </Form.Row>
+                    <Form.Row style={{textAlign : "center", fontSize : '1rem', fontWeight : 600}}>
+                        <Col xs={3} className="hide-on-xs">Date</Col>
+                        <Col xs={5} className="hide-on-xs">Description Of Maintenance Job Carried Out</Col>
+                        <Col xs={3} className="hide-on-xs">Remarks <br/>(For Official Use)</Col>
+                        <Col xs={{span : 1, offset : 11}} sm={1}> <Button variant='info' onClick={this.addRecord} style={{padding : '0 .4rem'}}>+</Button></Col>
+                    </Form.Row>
+                    {this.renderRecords()}
+                    </Form.Group>
                  </Col>
+            </Row>
+            <Row>
+                <Col xs={12} sm={{span : 11}} style={{textAlign : "right", marginTop : '30px'}}>
+                <SignatureCanvas 
+                    canvasProps={{width: 300, height: 100, className: 'sigCanvas'}} 
+                    ref={(ref) => { this.sigCanvas = ref }} />,
+                </Col>
             </Row>
             <Row>
                 <Col xs={12} sm={{span : 11}} style={{textAlign : "right", marginTop : '30px'}}>

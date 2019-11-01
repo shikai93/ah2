@@ -1,11 +1,14 @@
 const fs = require('fs');
 const PizZip = require('pizzip');
 const Docxtemplater = require('docxtemplater');
+const ImageModule=require('docxtemplater-image-module')
 const Shell = require('node-powershell');
 const crypto = require("crypto");
+const sizeOf = require('image-size');
 
 const outputPDFFolder = "/public/pdfs";
 const templateFolder = "/public/templates";
+const tempImageFileName = "temp.png";
 
 class PDFFormService {
     SaveDocToPDF(tempDocx, outputPDFFolder, pdfFileName, relativePath, callback) {
@@ -23,6 +26,7 @@ class PDFFormService {
         ps.invoke()
         .then(output => {
             fs.unlink(tempDocx, (err) => {})
+            fs.unlink(tempImageFileName, (err) => {})
             ps.dispose();
             callback(relativePath, null)
         })
@@ -32,11 +36,25 @@ class PDFFormService {
         });
     }
 
-    CreateDocFromTemplate(templatePath, data, tempDocx) {
+    CreateDocFromTemplate(templatePath, data, tempDocx, callback) {
         //Create docx from template
         var content = fs.readFileSync(`${templatePath}`, 'binary');
         const doc = new Docxtemplater();
         var zip = new PizZip(content);
+        if (data.signature !== undefined) {
+            var opts = {}
+            opts.centered = false;
+            opts.getImage=function(tagValue, tagName) {
+                return  fs.readFileSync(tempImageFileName);
+            }
+            opts.getSize=function(img,tagValue, tagName) {
+                let sizeObj=sizeOf(img);
+                return [sizeObj.width,sizeObj.height];
+                // return [150,50];
+            }
+            var imageModule=new ImageModule(opts);
+            doc.attachModule(imageModule);
+        }
         doc.loadZip(zip);
         doc.setData(data);
         try {
@@ -53,7 +71,11 @@ class PDFFormService {
         const relativePath = `${outputPDFFolder}/${outFileName}`
         var id = crypto.randomBytes(20).toString('hex');
         const tempDocx = `${id}.docx`
-        this.CreateDocFromTemplate(`.${templateFolder}/${templateFileName}`, docData, tempDocx)
+        if (docData.signature !== undefined) {
+            const imageData = docData.signature.replace(/^data:image\/png;base64,/, "");
+            fs.writeFileSync(tempImageFileName, imageData, 'base64')
+        }
+        this.CreateDocFromTemplate(`.${templateFolder}/${templateFileName}`, docData, tempDocx, callback)
         this.SaveDocToPDF(tempDocx, outputPDFFolder, outFileName, relativePath, callback)
     }
 

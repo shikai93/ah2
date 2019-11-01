@@ -11,6 +11,7 @@ import WeeklyDefect from "./Components/PDFExportForm/WeeklyDefects/WeeklyDefect.
 import WeeklyDefects from "./Components/PDFExportForm/WeeklyDefects/WeeklyDefects.js"
 import DailyBunkerRecords from "./Components/PDFExportForm/DailyBunkerRecord/DailyBunkerRecords.js"
 import DailyBunkerRecord from "./Components/PDFExportForm/DailyBunkerRecord/DailyBunkerRecord.js"
+import Attendance from "./Components/Attendance/Attendance.js"
 
 import LoginPage from "./Components/Auth/login.js"
 function App() {
@@ -35,6 +36,7 @@ function App() {
                 <PrivateRoute exact path="/weeklydefect/report" component={WeeklyDefects} />
                 <PrivateRoute exact path="/dailybunker/report/new" component={DailyBunkerRecord} />
                 <PrivateRoute exact path="/dailybunker/report" component={DailyBunkerRecords} />
+                <PrivateRoute exact path="/attendance" component={Attendance} />
               </Router>
             </AuthProvider>
           </Col>

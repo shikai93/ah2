@@ -8,6 +8,8 @@
     "cors": "^2.8.5",
     "docx-pdf": "0.0.1",
     "docxtemplater": "^3.14.3",
+    "docxtemplater-image-module": "^3.1.0",
+    "image-size": "^0.8.3",
     "mssql": "^5.1.0",
     "node-powershell": "^4.0.0",
     "pdfkit": "^0.10.0",
@@ -15,8 +17,10 @@
     "react": "^16.10.2",
     "react-bootstrap": "^1.0.0-beta.14",
     "react-dom": "^16.10.2",
+    "react-qr-reader": "^2.2.1",
     "react-router-dom": "^5.1.2",
     "react-scripts": "3.2.0",
+    "react-signature-canvas": "^1.0.3",
     "react-speech-recognition": "^2.0.4"
   },
   "scripts": {

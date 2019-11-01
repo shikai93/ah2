@@ -8,7 +8,7 @@ class MaintenanceReportService {
         this.pdfService = pdfService
     }
     GetMaintenanceReport(callback) {
-        this.sqlInterface.PerformQuery("SELECT month, year, v.name AS vessel, d.name AS dept, filepath FROM MachineryMaintenanceReport JOIN Vessel AS v ON v.vesselId = vessel JOIN Dept AS d ON d.deptId = dept",[],(results,error) => {
+        this.sqlInterface.PerformQuery("SELECT month, year, v.name AS vessel, d.name AS dept, filepath FROM MachineryMaintenanceReport JOIN Vessel AS v ON v.vesselId = vessel JOIN Dept AS d ON d.deptId = dept ORDER BY year,monthEnum",[],(results,error) => {
             callback(results,error)
         })
     }

@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const sql = require('mssql')
 const REPORTTEMPLATE = 'DailyBunkerLubricantFWROB.docx';
+
 "use strict";
 class DailyBunkerRecordService {
     constructor (pdfService,sqlInterface) {
@@ -54,8 +55,8 @@ class DailyBunkerRecordService {
                     "DELETE FROM BunkerStatusRecord WHERE recordId=(SELECT recordId FROM BunkerRecord_Record WHERE bunkerRecordId=(SELECT recordId FROM DailyBunkerStatusRecords WHERE reportDate = @reportDate AND vesselId=(SELECT vesselId FROM Vessel WHERE name=@vessel)))" +
                     "DELETE FROM BunkerRecord_Record WHERE bunkerRecordId=(SELECT recordId FROM DailyBunkerStatusRecords WHERE reportDate = @reportDate AND vesselId=(SELECT vesselId FROM Vessel WHERE name=@vessel))" +
                     "DELETE FROM DailyBunkerStatusRecords WHERE reportDate = @reportDate AND vesselId=(SELECT vesselId FROM Vessel WHERE name=@vessel)"+
-                    "INSERT INTO DailyBunkerStatusRecords (vesselId, lastBunkerDate, lastBunkerQuantity, chiefEngineerName, reportDate, bunkerROB, isMGO, isLO, isFW, filepath)"+
-                    " VALUES ( (SELECT vesselId FROM Vessel WHERE name=@vessel), @lastBunkerDate, @lastBunkerQuantity, @chiefEngineerName,@reportDate, @bunkerROB, @isMGO, @isLO, @isFW, @filepath);"+
+                    "INSERT INTO DailyBunkerStatusRecords (vesselId, lastBunkerDate, lastBunkerQuantity, chiefEngineerName, reportDate, bunkerROB, isMGO, isLO, isFW, filepath, signatureURI)"+
+                    " VALUES ( (SELECT vesselId FROM Vessel WHERE name=@vessel), @lastBunkerDate, @lastBunkerQuantity, @chiefEngineerName,@reportDate, @bunkerROB, @isMGO, @isLO, @isFW, @filepath, @signature);"+
                     "UPDATE BunkerRecord_Record SET bunkerRecordId=(SELECT SCOPE_IDENTITY()), batch_id=NULL WHERE batch_id=@batchId;",
                     [{ 
                         name : 'vessel',
@@ -101,6 +102,10 @@ class DailyBunkerRecordService {
                         name : 'filepath',
                         type : sql.VarChar(sql.MAX),
                         value : relativePath
+                    },{
+                        name : 'signature',
+                        type : sql.VarChar(sql.MAX),
+                        value : docData.signature   
                     }],
                     (recordset, error) => {
                         callback(relativePath, error)
@@ -117,6 +122,7 @@ class DailyBunkerRecordService {
         return ''
     }
     CreateDailyBunkerRecord(docData,callback) {
+        // docData.signature
         const templateFileName = REPORTTEMPLATE
         var outFileName = "DailyBunker/DailyBunker"
         docData['reportDateStr'] = this.ConvertDateToString( new Date(docData.reportDate))

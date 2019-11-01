@@ -38,5 +38,9 @@ class API {
     VerifyToken(userId, token, callback) {
         this.serviceManager.GetUserAccountService().VerifyToken(userId, token, callback)
     }
+    // Attendance
+    MarkAttendance(docData, callback) {
+        this.serviceManager.GetAttendanceService().MarkAttendance(docData, callback)
+    }
 }
 module.exports = API;
