@@ -76,7 +76,7 @@ class PDFFormService {
             fs.writeFileSync(tempImageFileName, imageData, 'base64')
         }
         this.CreateDocFromTemplate(`.${templateFolder}/${templateFileName}`, docData, tempDocx, callback)
-        this.SaveDocToPDF(tempDocx, outputPDFFolder, outFileName, relativePath, callback)
+        this.SaveDocToPDF(tempDocx, outputPDFFolder, outFileName, relativePath, callback) 
     }
 
     CreatePdftest(callback){

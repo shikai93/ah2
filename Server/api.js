@@ -42,5 +42,9 @@ class API {
     MarkAttendance(docData, callback) {
         this.serviceManager.GetAttendanceService().MarkAttendance(docData, callback)
     }
+    // DIGI Opening
+    CreateCongratulationNote(docData, callback) {
+        this.serviceManager.GetCongratulationService().CreateCongratulationNote(docData, callback)
+    }
 }
 module.exports = API;

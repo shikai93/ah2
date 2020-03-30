@@ -2,7 +2,7 @@ const axios = require('axios');
 
 class Model {
     constructor() {
-        this.apiEndPoint = "http://127.0.0.1:4001"
+        this.apiEndPoint = "http://192.168.1.240:4001"
     }
     
     get(path, params, callback) {

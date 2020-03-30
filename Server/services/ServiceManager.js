@@ -6,6 +6,7 @@ const WeeklyDefectRecordService = require('./WeeklyDefectRecordService.js')
 const DailyBunkerRecordService = require('./DailyBunkerRecordService.js')
 const AttendanceAPIService = require('./AttendanceAPIService.js')
 const UserAccountService = require('./UserAccountService.js')
+const CongratulationService = require('./CongratulationService.js')
 class ServiceManager {
     constructor () {
         this.sqlService = new SQLService()
@@ -16,6 +17,7 @@ class ServiceManager {
         this.DailyBunkerService = new DailyBunkerRecordService(this.pdfService, this.sqlService.sqlInterface)
         this.UserAccountService = new UserAccountService(this.sqlService.sqlInterface)
         this.AttendanceAPIService = new AttendanceAPIService(this.sqlService.sqlInterface)
+        this.CongratulationService = new CongratulationService(this.pdfService, this.sqlService.sqlInterface)
     }
     GetSQLService() {
         return this.sqlService;
@@ -40,6 +42,9 @@ class ServiceManager {
     }
     GetAttendanceService(){
         return this.AttendanceAPIService;
+    }
+    GetCongratulationService() {
+        return this.CongratulationService;
     }
 }
 module.exports = ServiceManager;

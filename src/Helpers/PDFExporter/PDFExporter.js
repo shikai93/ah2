@@ -1,6 +1,17 @@
 import Model from '../../Models/Models.js'
 
 class PDFExporter extends Model{
+    CreateCongratulationNote = (docData,callback) => {
+        super.postReq('/pdf/congratulations/create', docData, (value,error) => {
+            if (error === null) {
+                console.log(value);
+                callback(true);
+            } else {
+                console.log(error)
+                callback(false);
+            } 
+        })
+    }
     CreateMaintenanceReportPDF = (docData,callback) => {
         super.postReq('/pdf/maintenanereport/create' , docData, (value,error) => {
             if (error === null) {

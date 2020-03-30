@@ -12,7 +12,7 @@ import WeeklyDefects from "./Components/PDFExportForm/WeeklyDefects/WeeklyDefect
 import DailyBunkerRecords from "./Components/PDFExportForm/DailyBunkerRecord/DailyBunkerRecords.js"
 import DailyBunkerRecord from "./Components/PDFExportForm/DailyBunkerRecord/DailyBunkerRecord.js"
 import Attendance from "./Components/Attendance/Attendance.js"
-
+import SignPage from "./Components/PDFExportForm/SignIn/Signin"
 import LoginPage from "./Components/Auth/login.js"
 function App() {
   return (
@@ -24,7 +24,11 @@ function App() {
         </Row>
         <Row className="contentContainer">
           <Col>
-            <AuthProvider>
+            <Router>
+              <SignPage></SignPage>
+            </Router>
+           
+            {/* <AuthProvider>
               <Router>
                 <Route exact path="/" component={Home} />
                 <Route exact path="/login" render={() => (
@@ -38,7 +42,7 @@ function App() {
                 <PrivateRoute exact path="/dailybunker/report" component={DailyBunkerRecords} />
                 <PrivateRoute exact path="/attendance" component={Attendance} />
               </Router>
-            </AuthProvider>
+            </AuthProvider> */}
           </Col>
         </Row>
       </Container>

@@ -39,6 +39,16 @@ router.post("/token/verify", (req, res) => {
     callback(res,value,err)
   })
 })
+// Digi Opening
+router.post("/pdf/congratulations/create", (req, res) => {
+  let signature = req.body.signature
+  var docData = {
+    signature : signature
+  }
+  api.CreateCongratulationNote(docData, (value, err) => {
+    callback(res,value,err)
+  })
+});
 
 // MAINTENANCE REPORT ROUTES
 router.post("/pdf/maintenanereport/create", (req, res) => {
